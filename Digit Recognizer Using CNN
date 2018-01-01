@@ -69,7 +69,7 @@ def cnn_model_fn(features, labels, mode):
 
   # Configure the Training Op (for TRAIN mode)
   if mode == tf.estimator.ModeKeys.TRAIN:
-    optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.007)
+    optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.001)
     train_op = optimizer.minimize(
         loss=loss,
         global_step=tf.train.get_global_step())
@@ -85,35 +85,84 @@ def cnn_model_fn(features, labels, mode):
 #def main(unused_argv):
   # Load training and eval data
 #mnist = tf.contrib.learn.datasets.load_dataset("mnist")
-train_data = x_train.as_matrix().astype(np.float32)#mnist.train.images # Returns np.array
-train_labels = np.asarray(y_train, dtype=np.float32)
-eval_data = x_test.as_matrix().astype(np.float32) #mnist.test.images # Returns np.array
-eval_labels = np.asarray(y_test, dtype=np.float32)
-  # Create the Estimator
-mnist_classifier = tf.estimator.Estimator(
-        model_fn=cnn_model_fn, model_dir="/tmp/mnist_convnet_model")
-  # Set up logging for predictions
-tensors_to_log = {"probabilities": "softmax_tensor"}
-logging_hook = tf.train.LoggingTensorHook(
-    tensors=tensors_to_log, every_n_iter=50)
       # Train the model
-train_input_fn = tf.estimator.inputs.numpy_input_fn(
-   x={"x": train_data},
-    y=train_labels,
-    batch_size=100,
-    num_epochs=None,
-    shuffle=True)
-mnist_classifier.train(
-    input_fn=train_input_fn,
-    steps=20000,
-    hooks=[logging_hook])
-  
-  # Evaluate the model and print results
-eval_input_fn = tf.estimator.inputs.numpy_input_fn(
-          x={"x": eval_data},
-          y=eval_labels,
-          num_epochs=1,
-          shuffle=False)
-eval_results = mnist_classifier.evaluate(input_fn=eval_input_fn)
-print(eval_results)
 
+  
+# Evaluate the model and print results
+def Evaluate(train_data,train_labels,eval_data,eval_labels):
+    train_data = x_train.as_matrix().astype(np.float32)#mnist.train.images # Returns np.array
+    train_labels = np.asarray(y_train, dtype=np.float32)
+    eval_data = x_test.as_matrix().astype(np.float32) #mnist.test.images # Returns np.array
+    eval_labels = np.asarray(y_test, dtype=np.float32)
+      # Create the Estimator
+    mnist_classifier = tf.estimator.Estimator(
+            model_fn=cnn_model_fn, model_dir="/tmp/mnist_convnet_model")
+      # Set up logging for predictions
+    tensors_to_log = {"probabilities": "softmax_tensor"}
+    logging_hook = tf.train.LoggingTensorHook(
+        tensors=tensors_to_log, every_n_iter=50)
+
+    train_input_fn = tf.estimator.inputs.numpy_input_fn(
+       x={"x": train_data},
+        y=train_labels,
+        batch_size=100,
+        num_epochs=None,
+        shuffle=True)
+    mnist_classifier.train(
+        input_fn=train_input_fn,
+        steps=20000,
+        hooks=[logging_hook])
+    eval_input_fn  = tf.estimator.inputs.numpy_input_fn(
+              x={"x": eval_data},
+              y=eval_labels,
+              num_epochs=1,
+              shuffle=False)
+    eval_results = mnist_classifier.evaluate(input_fn=eval_input_fn )
+    print(eval_results)
+    
+    
+
+#Predict and generate CSV
+def Predict_now():
+    train_data = df_x.as_matrix().astype(np.float32)#mnist.train.images # Returns np.array
+    train_labels = np.asarray(df_y, dtype=np.float32)
+    eval_data = testDf.as_matrix().astype(np.float32) #mnist.test.images # Returns np.array
+    #eval_labels = np.asarray(y_test, dtype=np.float32)
+      # Create the Estimator
+    mnist_classifier = tf.estimator.Estimator(
+            model_fn=cnn_model_fn, model_dir="/tmp/mnist_convnet_model")
+      # Set up logging for predictions
+    tensors_to_log = {"probabilities": "softmax_tensor"}
+    logging_hook = tf.train.LoggingTensorHook(
+        tensors=tensors_to_log, every_n_iter=10000)
+
+    train_input_fn = tf.estimator.inputs.numpy_input_fn(
+       x={"x": train_data},
+        y=train_labels,
+        batch_size=100,
+        num_epochs=None,
+        shuffle=True)
+    mnist_classifier.train(
+        input_fn=train_input_fn,
+        steps=1000,
+        hooks=[logging_hook])
+    Pred_input_fn = tf.estimator.inputs.numpy_input_fn(
+              x={"x": eval_data},
+              y=None,
+              num_epochs=1,
+              shuffle=False)
+
+    pred_results = list(mnist_classifier.predict(input_fn=Pred_input_fn))
+    k_range = []
+    for diction in pred_results:
+        k_range.append(diction['classes'])
+        
+    testlabels=pd.DataFrame()
+    testlabels['Label']=k_range
+    testlabels.to_csv('C:/Users/mandar/Desktop/KaggleData/Digit/resulstCNN.csv')
+# to predict and generate csv with results
+Predict_now()
+# to evaulate and see accuracy
+Evaluate(x_train, y_train, x_test, y_test)
+#if __name__ == "__main__":
+#  tf.app.run()
